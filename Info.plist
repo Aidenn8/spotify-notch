@@ -10,6 +10,8 @@
 	<string>Spotify Notch</string>
 	<key>CFBundleExecutable</key>
 	<string>SpotifyNotch</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

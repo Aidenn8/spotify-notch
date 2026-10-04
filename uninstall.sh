@@ -1,8 +1,7 @@
 #!/bin/bash
-# Removes the watcher and the installed app.
-LABEL=com.aidenn8.spotifynotch.watcher
-launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null
-rm -f "$HOME/Library/LaunchAgents/$LABEL.plist"
+# Removes the login agent and the app installed by install.sh.
+DEST="$HOME/Applications/Spotify Notch.app"
 pkill -x SpotifyNotch 2>/dev/null
-rm -rf "$HOME/Applications/Spotify Notch.app"
+[ -d "$DEST" ] && "$DEST/Contents/MacOS/SpotifyNotch" --uninstall
+rm -rf "$DEST"
 echo "uninstalled"
