@@ -48,7 +48,9 @@ struct NotchGeometry: Equatable {
             size.width += 2 * Self.shadowMargin
             size.height += Self.shadowMargin
         }
-        return NSRect(x: (centerX - size.width / 2).rounded(), y: screenFrame.maxY - size.height,
+        // Not rounded: every mode's window must share the exact same center,
+        // or the notch would shift by half a point when the window resizes.
+        return NSRect(x: centerX - size.width / 2, y: screenFrame.maxY - size.height,
                       width: size.width, height: size.height)
     }
 

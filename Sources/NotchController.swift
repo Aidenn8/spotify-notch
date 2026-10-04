@@ -72,12 +72,41 @@ final class HoverHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 
+/// Holds the hosting view at a fixed size (as big as the panel ever gets),
+/// pinned top-center, while the window around it grows and shrinks. SwiftUI
+/// never sees a size change, so resizing the window can't shift the notch or
+/// get swept into the open animation (which made it slide in from the left).
+final class PinnedContainerView: NSView {
+    let content: NSView
+    var contentSize: CGSize { didSet { pin() } }
+
+    init(content: NSView, size: CGSize) {
+        self.content = content
+        self.contentSize = size
+        super.init(frame: .zero)
+        addSubview(content)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    // Runs synchronously whenever the window resizes, before anything draws.
+    override func resizeSubviews(withOldSize oldSize: NSSize) { pin() }
+    override func layout() { super.layout(); pin() }
+
+    private func pin() {
+        content.frame = NSRect(x: (bounds.width - contentSize.width) / 2,
+                               y: bounds.height - contentSize.height,
+                               width: contentSize.width, height: contentSize.height)
+    }
+}
+
 /// Owns the panel and decides which mode it's in. The window is only ever as
 /// big as the current mode needs, so it never blocks clicks on the menu bar
 /// or the apps underneath.
 final class NotchController {
     private let panel = NotchPanel()
     private let host: HoverHostingView<NotchView>
+    private let container: PinnedContainerView
     private let sticky = StickySpace()
     private let state = NotchState(geometry: .detect())
     private let model: SpotifyModel
@@ -96,8 +125,9 @@ final class NotchController {
         host = HoverHostingView(rootView: NotchView(state: state, model: model,
                                                     onQuit: { NSApp.terminate(nil) }))
         host.sizingOptions = []
+        container = PinnedContainerView(content: host, size: state.geometry.windowFrame(for: .expanded).size)
         host.onHover = { [weak self] in self?.hoverChanged($0) }
-        panel.contentView = host
+        panel.contentView = container
         panel.setFrame(state.geometry.windowFrame(for: .hidden), display: false)
         sticky.add(panel)
 
@@ -173,6 +203,7 @@ final class NotchController {
         let geo = NotchGeometry.detect()
         guard geo != state.geometry else { return }
         state.geometry = geo
+        container.contentSize = geo.windowFrame(for: .expanded).size
         panel.setFrame(geo.windowFrame(for: state.mode), display: true)
         host.hoverSize = state.mode == .hidden ? .zero : geo.size(for: state.mode)
     }
