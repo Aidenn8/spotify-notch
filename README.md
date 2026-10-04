@@ -7,6 +7,8 @@ Turns the notch on your MacBook into a Spotify widget.
 - **Open:** hover over it and it grows into a mini player with the cover, song,
   progress bar, and shuffle / previous / play-pause / next / repeat buttons.
 - Colors are picked from the album cover.
+- Pick the open panel's background: solid black (default) or one of four glass
+  styles (smoky, frosted, clear, or tinted with the album's color).
 - It appears when Spotify opens and disappears when Spotify quits.
 
 ## Download
@@ -46,8 +48,8 @@ open it once.
 
 ## Tips
 
-- Right-click the widget to quit it or open Spotify. It comes back the next
-  time Spotify opens.
+- Right-click the widget to change the background, open Spotify, or quit. It
+  comes back the next time Spotify opens.
 - Shuffle and repeat only work when music is playing on this Mac. If Spotify is
   controlling another device (for example "Playing on iPhone"), those two
   buttons can't change it.

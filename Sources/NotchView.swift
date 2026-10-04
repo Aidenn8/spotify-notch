@@ -3,8 +3,16 @@ import SwiftUI
 final class NotchState: ObservableObject {
     @Published var mode: NotchMode = .hidden
     @Published var geometry: NotchGeometry
+    /// The open panel's background, chosen from the right-click menu.
+    @Published var style: PanelStyle {
+        didSet { UserDefaults.standard.set(style.rawValue, forKey: Self.styleKey) }
+    }
+    private static let styleKey = "panelStyle"
 
-    init(geometry: NotchGeometry) { self.geometry = geometry }
+    init(geometry: NotchGeometry) {
+        self.geometry = geometry
+        style = UserDefaults.standard.string(forKey: Self.styleKey).flatMap(PanelStyle.init) ?? .solid
+    }
 }
 
 struct NotchView: View {
@@ -21,8 +29,10 @@ struct NotchView: View {
         let r = geo.radii(for: mode)
         let shape = NotchShape(topRadius: r.top, bottomRadius: r.bottom)
 
-        shape
-            .fill(Color.black)
+        PanelBackground(style: state.style, expanded: mode == .expanded,
+                        accent: Color(nsColor: model.accent),
+                        notchHeight: geo.notchHeight, height: size.height)
+            .clipShape(shape)
             .overlay(alignment: .top) {
                 content(mode: mode, geo: geo)
                     .padding(.horizontal, r.top)
@@ -30,8 +40,18 @@ struct NotchView: View {
                     .clipShape(shape)
             }
             .frame(width: size.width, height: size.height)
-            .shadow(color: .black.opacity(mode == .expanded ? 0.45 : 0), radius: 14, y: 6)
+            .shadow(color: .black.opacity(mode == .expanded ? state.style.shadowOpacity : 0), radius: 14, y: 6)
+            .animation(.easeInOut(duration: 0.25), value: state.style)
             .contextMenu {
+                // Listed inline: submenus don't open from this panel.
+                Section("Background") {
+                    ForEach(PanelStyle.allCases) { style in
+                        Toggle(style.rawValue, isOn: Binding(
+                            get: { state.style == style },
+                            set: { _ in state.style = style }))
+                    }
+                }
+                Divider()
                 Button("Open Spotify") { model.openSpotify() }
                 Divider()
                 Button("Quit Spotify Notch", action: onQuit)
