@@ -10,8 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .filter { $0 != me && $0.executableURL?.lastPathComponent == me.executableURL?.lastPathComponent }
         if !others.isEmpty { NSApp.terminate(nil); return }
 
-        // --watcher: opened by the login agent (no setup, no welcome message).
-        // --quiet: set up without the welcome message (used by install.sh).
+        // --watcher: opened by the login agent (no setup).
+        // --quiet: set up without opening Spotify (used by install.sh).
         // --uninstall: remove the login agent and quit (used by uninstall.sh).
         // Debug: --demo shows a fake track, --expanded pins the panel open.
         let args = CommandLine.arguments
@@ -30,17 +30,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
             if !args.contains("--watcher") {
+                // Opened by hand: set up quietly. If Spotify isn't running,
+                // open it; the login agent brings the widget up once it is.
                 Installer.install()
-            }
-            if !args.contains("--watcher") && !args.contains("--quiet") {
-                switch showWelcome() {
-                case .done: break
-                case .openSpotify:
-                    // The login agent reopens us once Spotify is up.
-                    openSpotify()
-                    NSApp.terminate(nil)
-                    return
-                case .uninstalled:
+                if !SpotifyModel.isRunning && !args.contains("--quiet") {
+                    // Quit only once the launch request has gone through;
+                    // quitting right away cancels it.
+                    openSpotify { NSApp.terminate(nil) }
                     return
                 }
             }
@@ -54,11 +50,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller = NotchController(demo: demo, pinExpanded: args.contains("--expanded"))
     }
 
-    /// Opening the app again from Finder while it's running shows the
-    /// welcome message, which is also where Uninstall lives.
+    /// The app has no windows to bring forward when opened again from Finder.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
-        if !showingWelcome { _ = showWelcome() }
-        return false
+        false
     }
 
     @objc private func appTerminated(_ note: Notification) {
@@ -73,52 +67,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Messages
 
-    private enum WelcomeResult { case done, openSpotify, uninstalled }
-    private var showingWelcome = false
-
-    private func showWelcome() -> WelcomeResult {
-        showingWelcome = true
-        defer { showingWelcome = false }
-        NSApp.activate(ignoringOtherApps: true)
-        let alert = NSAlert()
-        alert.messageText = "Spotify Notch is ready"
-        alert.informativeText = """
-        Your music shows up in the notch whenever Spotify is open. Hover over it \
-        for controls, or right-click it to quit.
-
-        The first time, macOS asks whether Spotify Notch can control Spotify. \
-        Click OK so it can show what's playing.
-        """
-        alert.addButton(withTitle: "Done")
-        let canOpenSpotify = !SpotifyModel.isRunning
-        if canOpenSpotify { alert.addButton(withTitle: "Open Spotify") }
-        alert.addButton(withTitle: "Uninstall…")
-
-        switch alert.runModal() {
-        case .alertFirstButtonReturn:
-            return .done
-        case .alertSecondButtonReturn where canOpenSpotify:
-            return .openSpotify
-        default:
-            return confirmUninstall() ? .uninstalled : .done
-        }
-    }
-
-    private func confirmUninstall() -> Bool {
-        let alert = NSAlert()
-        alert.messageText = "Uninstall Spotify Notch?"
-        alert.informativeText = "This removes the widget and moves the app to the Trash."
-        alert.addButton(withTitle: "Uninstall")
-        alert.addButton(withTitle: "Cancel")
-        guard alert.runModal() == .alertFirstButtonReturn else { return false }
-
-        Installer.uninstall()
-        NSWorkspace.shared.recycle([Bundle.main.bundleURL]) { _, _ in
-            NSApp.terminate(nil)
-        }
-        return true
-    }
-
     private func showMoveToApplications() {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
@@ -130,9 +78,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.runModal()
     }
 
-    private func openSpotify() {
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: SpotifyModel.bundleID) else { return }
-        NSWorkspace.shared.openApplication(at: url, configuration: .init())
+    private func openSpotify(then done: @escaping () -> Void) {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: SpotifyModel.bundleID) else {
+            done()
+            return
+        }
+        NSWorkspace.shared.openApplication(at: url, configuration: .init()) { _, _ in
+            DispatchQueue.main.async(execute: done)
+        }
     }
 }
 

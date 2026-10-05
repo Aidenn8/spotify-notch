@@ -30,16 +30,16 @@ and the Spotify app.
    - Open **System Settings → Privacy & Security**.
    - Scroll down to the message about Spotify Notch and click **Open Anyway**,
      then confirm with your password.
-5. Click **Done** on the welcome message.
-6. Open Spotify. When macOS asks whether Spotify Notch can control Spotify,
-   click **OK**.
+5. Spotify opens and the widget appears in the notch. When macOS asks whether
+   Spotify Notch can control Spotify, click **OK**.
 
 That's it. From now on the widget shows up whenever Spotify is open, even after
 restarting your Mac.
 
 ### Uninstall
 
-Open **Spotify Notch** from your Applications folder and click **Uninstall…**.
+Drag **Spotify Notch** from your Applications folder to the Trash. It removes
+its login item by itself, so nothing is left behind.
 
 ### Updating
 
@@ -48,8 +48,8 @@ open it once.
 
 ## Tips
 
-- Right-click the widget to change the background, open Spotify, or quit. It
-  comes back the next time Spotify opens.
+- Right-click the widget to change the background, open Spotify, or quit.
+  After quitting, it comes back the next time Spotify opens.
 - Shuffle and repeat only work when music is playing on this Mac. If Spotify is
   controlling another device (for example "Playing on iPhone"), those two
   buttons can't change it.
@@ -85,7 +85,8 @@ Written in Swift (AppKit + SwiftUI) with no dependencies.
   switch Spaces (`Sources/StickySpace.swift`).
 - **Opening with Spotify:** when you open the app it installs a small login
   agent (`Watcher/main.swift`) that waits for Spotify to launch and opens the
-  widget. The widget quits when Spotify does.
+  widget. The widget quits when Spotify does. When the app is moved to the
+  Trash, the agent removes itself.
 
 ## Known limitations
 
