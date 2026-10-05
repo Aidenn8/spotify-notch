@@ -9,6 +9,8 @@ Turns the notch on your MacBook into a Spotify widget.
 - Colors are picked from the album cover.
 - Pick the open panel's background: solid black (default) or one of four glass
   styles (smoky, frosted, clear, or tinted with the album's color).
+- Optional time-synced lyrics in the open panel, scrolling up line by line
+  (off by default).
 - It appears when Spotify opens and disappears when Spotify quits.
 
 ## Download
@@ -48,8 +50,12 @@ open it once.
 
 ## Tips
 
-- Right-click the widget to change the background, open Spotify, or quit.
-  After quitting, it comes back the next time Spotify opens.
+- Right-click the widget to change the background, turn lyrics on or off, open
+  Spotify, or quit. After quitting, it comes back the next time Spotify opens.
+- Lyrics come from [LRCLIB](https://lrclib.net), a free community lyrics
+  database. While lyrics are on, the song's title and artist are sent there to
+  look them up. Instrumentals and many covers have none, and then the panel
+  looks as usual.
 - Shuffle and repeat only work when music is playing on this Mac. If Spotify is
   controlling another device (for example "Playing on iPhone"), those two
   buttons can't change it.
@@ -83,6 +89,9 @@ Written in Swift (AppKit + SwiftUI) with no dependencies.
 - **Staying on the notch** uses private CoreGraphics/SkyLight calls to put the
   window in its own space above the desktops, so it doesn't slide when you
   switch Spaces (`Sources/StickySpace.swift`).
+- **Lyrics** are fetched from LRCLIB when the song changes and timed against
+  Spotify's playback position, with one timer for the next line rather than
+  polling. The timers only run while the panel is open.
 - **Opening with Spotify:** when you open the app it installs a small login
   agent (`Watcher/main.swift`) that waits for Spotify to launch and opens the
   widget. The widget quits when Spotify does. When the app is moved to the

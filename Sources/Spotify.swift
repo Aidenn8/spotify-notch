@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import ImageIO
 import SwiftUI
 
@@ -35,6 +36,10 @@ final class SpotifyModel: ObservableObject {
     private var artworkURL: String?
     private let demo: Bool
     private let scripts = ScriptRunner()
+
+    /// Fires whenever the playback position is re-anchored (play, pause,
+    /// seek, or a fresh reading from Spotify), so lyrics can re-time.
+    let anchorChanged = PassthroughSubject<Void, Never>()
     private var refreshInFlight = false
     private var refreshQueued = false
     private var cachedTrackID: String?
@@ -101,7 +106,26 @@ final class SpotifyModel: ObservableObject {
         anchorPosition = seconds
         anchorDate = Date()
         objectWillChange.send()
+        anchorChanged.send()
         send("set player position to \(seconds)", cache: false)
+    }
+
+    private static let positionScript = """
+    if application "Spotify" is running then
+        tell application "Spotify" to return {player state as string, player position}
+    end if
+    return {"closed"}
+    """
+
+    /// Re-reads just the playback position. Spotify doesn't announce seeks
+    /// made in its own window, so lyrics call this every few seconds.
+    func syncPosition() {
+        guard !demo, Self.isRunning else { return }
+        scripts.run(Self.positionScript) { [weak self] d in
+            guard let self, let d, d.numberOfItems >= 2, let state = d.atIndex(1)?.stringValue,
+                  state == "playing" || state == "paused" else { return }
+            self.setPlaying(state == "playing", position: d.atIndex(2)?.doubleValue)
+        }
     }
 
     func openSpotify() {
@@ -193,6 +217,7 @@ final class SpotifyModel: ObservableObject {
         anchorDate = now
         if playing != isPlaying { isPlaying = playing }
         if playing && !ready { markSynced() }
+        anchorChanged.send()
     }
 
     private func markSynced() {

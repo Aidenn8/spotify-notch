@@ -9,15 +9,26 @@ final class NotchState: ObservableObject {
     }
     private static let styleKey = "panelStyle"
 
+    /// The "Show Lyrics" setting (off unless turned on).
+    @Published var lyricsEnabled: Bool {
+        didSet { UserDefaults.standard.set(lyricsEnabled, forKey: Self.lyricsKey) }
+    }
+    private static let lyricsKey = "showLyrics"
+    /// Whether the current layout includes lyrics (setting on and the song
+    /// has synced lyrics). Set by the controller alongside `mode`.
+    @Published var lyricsLayout = false
+
     init(geometry: NotchGeometry) {
         self.geometry = geometry
         style = UserDefaults.standard.string(forKey: Self.styleKey).flatMap(PanelStyle.init) ?? .solid
+        lyricsEnabled = UserDefaults.standard.bool(forKey: Self.lyricsKey)
     }
 }
 
 struct NotchView: View {
     @ObservedObject var state: NotchState
     @ObservedObject var model: SpotifyModel
+    var lyrics: LyricsModel
     var onQuit: () -> Void
 
     @Namespace private var ns
@@ -25,7 +36,7 @@ struct NotchView: View {
     var body: some View {
         let geo = state.geometry
         let mode = state.mode
-        let size = geo.size(for: mode)
+        let size = geo.size(for: mode, lyrics: state.lyricsLayout)
         let r = geo.radii(for: mode)
         let shape = NotchShape(topRadius: r.top, bottomRadius: r.bottom)
 
@@ -51,6 +62,8 @@ struct NotchView: View {
                             set: { _ in state.style = style }))
                     }
                 }
+                Divider()
+                Toggle("Show Lyrics", isOn: $state.lyricsEnabled)
                 Divider()
                 Button("Open Spotify") { model.openSpotify() }
                 Divider()
@@ -120,6 +133,14 @@ struct NotchView: View {
                 visualizer
             }
             .frame(height: 56)
+
+            if state.lyricsLayout {
+                LyricsScroller(lyrics: lyrics, rows: 2, lineHeight: 22,
+                               font: .system(size: 14, weight: .semibold),
+                               currentOpacity: 1, upcomingOpacity: 0.32)
+                    .padding(.top, NotchGeometry.lyricsBlockHeight - 44)
+                    .transition(.opacity)
+            }
 
             ProgressRow(model: model)
                 .padding(.top, 12)

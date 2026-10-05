@@ -17,6 +17,7 @@ struct NotchGeometry: Equatable {
     static let expandedWidth: CGFloat = 400
     static let expandedContentHeight: CGFloat = 138
     static let shadowMargin: CGFloat = 24         // window room for the drop shadow
+    static let lyricsBlockHeight: CGFloat = 54   // open panel's lyrics area, when shown
 
     /// Concave "ear" radius at the top corners (blends into the menu bar)
     /// and the convex radius at the bottom corners.
@@ -28,7 +29,7 @@ struct NotchGeometry: Equatable {
         }
     }
 
-    func size(for mode: NotchMode) -> CGSize {
+    func size(for mode: NotchMode, lyrics: Bool = false) -> CGSize {
         let ears = 2 * radii(for: mode).top
         switch mode {
         case .hidden:
@@ -38,12 +39,15 @@ struct NotchGeometry: Equatable {
             return CGSize(width: notchWidth + 2 * Self.wing + ears, height: notchHeight)
         case .expanded:
             return CGSize(width: Self.expandedWidth + ears,
-                          height: notchHeight + Self.expandedContentHeight)
+                          height: notchHeight + Self.expandedContentHeight + (lyrics ? Self.lyricsBlockHeight : 0))
         }
     }
 
-    func windowFrame(for mode: NotchMode) -> NSRect {
-        var size = size(for: mode)
+    /// The largest the widget ever gets (open, with lyrics).
+    var maxWindowSize: CGSize { windowFrame(for: .expanded, lyrics: true).size }
+
+    func windowFrame(for mode: NotchMode, lyrics: Bool = false) -> NSRect {
+        var size = size(for: mode, lyrics: lyrics)
         if mode == .expanded {
             size.width += 2 * Self.shadowMargin
             size.height += Self.shadowMargin
