@@ -203,10 +203,7 @@ final class NotchController {
         // Set right away so the space a closing panel leaves can't reopen it.
         host.hoverSize = newMode == .hidden ? .zero : geo.size(for: newMode, lyrics: newLyrics)
 
-        let animation: Animation = newMode > oldMode ? .spring(response: 0.42, dampingFraction: 0.8)
-            : newMode < oldMode ? .spring(response: 0.36, dampingFraction: 0.92)
-            : .spring(response: 0.4, dampingFraction: 0.9)
-        withAnimation(animation) {
+        withAnimation(Self.animation(from: oldMode, to: newMode)) {
             state.mode = newMode
             state.lyricsLayout = newLyrics
         }
@@ -218,6 +215,13 @@ final class NotchController {
         }
         shrinkWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: work)
+    }
+
+    /// Springier opening than closing; a plain spring for lyrics coming and going.
+    static func animation(from old: NotchMode, to new: NotchMode) -> Animation {
+        new > old ? .spring(response: 0.42, dampingFraction: 0.8)
+            : new < old ? .spring(response: 0.36, dampingFraction: 0.92)
+            : .spring(response: 0.4, dampingFraction: 0.9)
     }
 
     private func screensChanged() {
