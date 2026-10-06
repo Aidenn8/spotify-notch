@@ -139,7 +139,11 @@ struct NotchView: View {
                                font: .system(size: 14, weight: .semibold),
                                currentOpacity: 1, upcomingOpacity: 0.32)
                     .padding(.top, NotchGeometry.lyricsBlockHeight - 44)
-                    .transition(.opacity)
+                    // Fade in once the panel has made room, not over the
+                    // progress bar sliding down past it.
+                    .transition(.asymmetric(
+                        insertion: .opacity.animation(.easeOut(duration: 0.25).delay(0.15)),
+                        removal: .opacity.animation(.easeOut(duration: 0.1))))
             }
 
             ProgressRow(model: model)
@@ -222,6 +226,7 @@ struct ProgressRow: View {
 
             HStack(spacing: 10) {
                 Text(Self.format(elapsed))
+                    .contentTransition(.numericText())
                     .frame(width: 34, alignment: .leading)
 
                 GeometryReader { g in
@@ -244,6 +249,7 @@ struct ProgressRow: View {
                 }
 
                 Text("-" + Self.format(duration.rounded(.down) - elapsed))
+                    .contentTransition(.numericText())
                     .frame(width: 34, alignment: .trailing)
             }
             .font(.system(size: 10, weight: .medium).monospacedDigit())
