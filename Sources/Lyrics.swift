@@ -90,7 +90,7 @@ final class LyricsModel: ObservableObject {
         status = .loading
         retime()
         if demo {
-            DispatchQueue.main.async { self.finish(Self.demoLines, for: track.id) }
+            DispatchQueue.main.async { self.finish(DemoTrack.lyrics(for: track.id), for: track.id) }
             return
         }
         request = LyricsFetcher.fetch(track) { [weak self] found in
@@ -152,16 +152,6 @@ final class LyricsModel: ObservableObject {
         syncTimer?.invalidate()
         syncTimer = nil
     }
-
-    /// Made-up lines for --demo, timed around the demo track's position.
-    private static let demoLines: [LyricLine] = [
-        (60, "Streetlights hum a song we used to know"), (64.5, "Every window glowing soft and slow"),
-        (69, "We keep driving with the radio on"), (73.5, ""), (76, "Chasing summer till the night is gone"),
-        (80.5, "Neon rivers running through the town"), (85, "Nobody here is gonna slow us down"),
-        (89.5, "Hold on tight, the city's wide awake"), (94, "Every turn is ours to take"),
-        (98.5, ""), (101, "Streetlights hum a song we used to know"), (105.5, "Every window glowing soft and slow"),
-        (110, "We keep driving with the radio on"), (114.5, "Chasing summer till the night is gone"),
-    ].map { LyricLine(time: $0.0, text: $0.1) }
 }
 
 // MARK: - LRCLIB

@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // --watcher: opened by the login agent (no setup).
         // --quiet: set up without opening Spotify (used by install.sh).
         // --uninstall: remove the login agent and quit (used by uninstall.sh).
-        // Debug: --demo shows a fake track, --expanded pins the panel open.
+        // Debug: --demo shows made-up tracks, --expanded pins the panel open.
         let args = CommandLine.arguments
         let demo = args.contains("--demo")
 

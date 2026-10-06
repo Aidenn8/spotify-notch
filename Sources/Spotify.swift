@@ -35,6 +35,7 @@ final class SpotifyModel: ObservableObject {
 
     private var artworkURL: String?
     private let demo: Bool
+    private var demoIndex = 0
     private let scripts = ScriptRunner()
 
     /// Fires whenever the playback position is re-anchored (play, pause,
@@ -89,8 +90,8 @@ final class SpotifyModel: ObservableObject {
         send("playpause")
     }
 
-    func next() { send("next track") }
-    func previous() { send("previous track") }
+    func next() { demo ? playDemo(demoIndex + 1) : send("next track") }
+    func previous() { demo ? playDemo(demoIndex - 1) : send("previous track") }
 
     func toggleShuffle() {
         shuffling.toggle()
@@ -300,14 +301,21 @@ final class SpotifyModel: ObservableObject {
     }
 
     private func loadDemo() {
-        track = Track(id: "demo", name: "Midnight City", artist: "M83",
-                      album: "Hurry Up, We're Dreaming", duration: 243)
-        anchorPosition = 71
         isPlaying = true
         shuffling = true
-        if let image = Artwork.demoImage(), let tiff = image.tiffRepresentation,
-           let (thumb, accent) = Artwork.process(tiff) {
-            artwork = thumb
+        playDemo(0)
+    }
+
+    private func playDemo(_ index: Int) {
+        let all = DemoTrack.all
+        demoIndex = (index % all.count + all.count) % all.count
+        let item = all[demoIndex]
+        track = item.track
+        setPlaying(isPlaying, position: item.start)
+        guard let tiff = Artwork.demoCover(item.colors).tiffRepresentation,
+              let (image, accent) = Artwork.process(tiff) else { return }
+        withAnimation(.easeInOut(duration: 0.35)) {
+            artwork = image
             self.accent = accent
         }
     }
@@ -398,13 +406,10 @@ enum Artwork {
         return color.blended(withFraction: (target - luma) / (1 - luma), of: .white) ?? color
     }
 
-    static func demoImage() -> NSImage? {
-        let size = NSSize(width: 300, height: 300)
-        return NSImage(size: size, flipped: false) { rect in
-            NSGradient(colors: [NSColor(srgbRed: 0.98, green: 0.36, blue: 0.55, alpha: 1),
-                                NSColor(srgbRed: 0.35, green: 0.18, blue: 0.75, alpha: 1),
-                                NSColor(srgbRed: 0.05, green: 0.05, blue: 0.2, alpha: 1)])?
-                .draw(in: rect, angle: -60)
+    /// A stand-in cover for --demo: a diagonal gradient with a pale sun.
+    static func demoCover(_ colors: [NSColor]) -> NSImage {
+        NSImage(size: NSSize(width: 300, height: 300), flipped: false) { rect in
+            NSGradient(colors: colors)?.draw(in: rect, angle: -60)
             NSColor(white: 1, alpha: 0.85).setFill()
             NSBezierPath(ovalIn: NSRect(x: 190, y: 170, width: 46, height: 46)).fill()
             return true
